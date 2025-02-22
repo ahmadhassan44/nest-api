@@ -16,10 +16,28 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
+    signup() {
+        console.log("Signup called");
+    }
+    signin() {
+        console.log("Signin called");
+    }
 };
 exports.AuthController = AuthController;
+__decorate([
+    (0, common_1.Post)("signup"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "signup", null);
+__decorate([
+    (0, common_1.Post)("signin"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "signin", null);
 exports.AuthController = AuthController = __decorate([
-    (0, common_1.Controller)(),
+    (0, common_1.Controller)("auth"),
     __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map
