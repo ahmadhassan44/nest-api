@@ -21,10 +21,10 @@ let AuthController = class AuthController {
         this.authService = authService;
     }
     signup(body) {
-        this.authService.signup();
+        return this.authService.signup(body);
     }
     signin(body) {
-        this.authService.signin();
+        return this.authService.signin(body);
     }
 };
 exports.AuthController = AuthController;
