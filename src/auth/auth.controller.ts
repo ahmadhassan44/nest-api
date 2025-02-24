@@ -7,6 +7,7 @@ export class AuthController{
     constructor(private authService: AuthService) {}
     @Post("signup")
     signup(@Body() body:AuthDto){
+        
         this.authService.signup()
     }
     @Post("signin")
