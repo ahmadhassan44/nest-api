@@ -11,7 +11,7 @@ model User {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  email     String @unique
+  email     String   @unique
   username  String
   hash      String
   firstName String
@@ -25,9 +25,9 @@ model Bookmark {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  title    String
+  title       String
   description String
-  url      String
+  url         String
 
   @@map("bookmarks")
 }
