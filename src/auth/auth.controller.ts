@@ -10,7 +10,6 @@ import {
 import { AuthService } from './auth.service';
 import { SignInDto, SignUpDto } from './dto';
 import { Tokens } from './types';
-import { SignOutDto } from './dto/signout.dto';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')

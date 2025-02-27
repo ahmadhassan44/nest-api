@@ -5,7 +5,6 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { JwtService } from '@nestjs/jwt';
 import { Tokens } from './types';
-import { SignOutDto } from './dto/signout.dto';
 
 @Injectable()
 export class AuthService {
@@ -78,10 +77,10 @@ export class AuthService {
       throw error;
     }
   }
-  async logout(@Body() body: SignOutDto): Promise<void> {
+  async logout({ userId }: { userId: number }): Promise<void> {
     await this.prisma.user.updateMany({
       where: {
-        id: body.userId,
+        id: userId,
         hashedRt: {
           not: null,
         },
