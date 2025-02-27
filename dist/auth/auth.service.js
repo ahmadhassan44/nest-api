@@ -18,9 +18,12 @@ const dto_1 = require("./dto");
 const argon = require("argon2");
 const prisma_service_1 = require("../prisma/prisma.service");
 const library_1 = require("@prisma/client/runtime/library");
+const jwt_1 = require("@nestjs/jwt");
+const signout_dto_1 = require("./dto/signout.dto");
 let AuthService = class AuthService {
-    constructor(prisma) {
+    constructor(prisma, jwtService) {
         this.prisma = prisma;
+        this.jwtService = jwtService;
     }
     async signin(dto) {
         const user = await this.prisma.user.findFirst({
@@ -33,8 +36,11 @@ let AuthService = class AuthService {
         const match = await argon.verify(user.hash, dto.password);
         if (!match)
             throw new common_1.ForbiddenException('Invalid password');
-        else
-            return 'User authenticated!';
+        else {
+            const tokens = await this.generateTokens(user.email, user.id);
+            await this.updateRefreshTokenInDb(user.id, tokens.refreshToken);
+            return tokens;
+        }
     }
     async signup(dto) {
         const hash = await argon.hash(dto.password);
@@ -56,7 +62,9 @@ let AuthService = class AuthService {
                     createdAt: true,
                 },
             });
-            return user;
+            const tokens = await this.generateTokens(user.email, user.id);
+            await this.updateRefreshTokenInDb(user.id, tokens.refreshToken);
+            return tokens;
         }
         catch (error) {
             if (error instanceof library_1.PrismaClientKnownRequestError) {
@@ -66,6 +74,39 @@ let AuthService = class AuthService {
             }
             throw error;
         }
+    }
+    async logout(body) {
+        await this.prisma.user.updateMany({
+            where: {
+                id: body.userId,
+                hashedRt: {
+                    not: null,
+                },
+            },
+            data: {
+                hashedRt: null,
+            },
+        });
+    }
+    async generateTokens(email, roleId) {
+        const [at, rt] = await Promise.all([
+            this.jwtService.sign({
+                sub: email,
+                roleId,
+            }, { expiresIn: '15m', secret: process.env.JWT_AT_SECRET }),
+            this.jwtService.sign({
+                sub: email,
+                roleId,
+            }, { expiresIn: '7d', secret: process.env.JWT_RT_SECRET }),
+        ]);
+        return { accessToken: at, refreshToken: rt };
+    }
+    async updateRefreshTokenInDb(userId, refreshToken) {
+        const hashedRt = await argon.hash(refreshToken);
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { hashedRt: hashedRt },
+        });
     }
 };
 exports.AuthService = AuthService;
@@ -81,8 +122,15 @@ __decorate([
     __metadata("design:paramtypes", [dto_1.SignUpDto]),
     __metadata("design:returntype", Promise)
 ], AuthService.prototype, "signup", null);
+__decorate([
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [signout_dto_1.SignOutDto]),
+    __metadata("design:returntype", Promise)
+], AuthService.prototype, "logout", null);
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        jwt_1.JwtService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

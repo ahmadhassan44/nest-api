@@ -16,6 +16,7 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const dto_1 = require("./dto");
+const signout_dto_1 = require("./dto/signout.dto");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
@@ -26,24 +27,34 @@ let AuthController = class AuthController {
     signin(body) {
         return this.authService.signin(body);
     }
+    logout(body) {
+        return this.authService.logout(body);
+    }
 };
 exports.AuthController = AuthController;
 __decorate([
-    (0, common_1.Post)("signup"),
+    (0, common_1.Post)('signup'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [dto_1.SignUpDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "signup", null);
 __decorate([
-    (0, common_1.Post)("signin"),
+    (0, common_1.Post)('signin'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [dto_1.SignInDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "signin", null);
+__decorate([
+    (0, common_1.Post)('logout'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [signout_dto_1.SignOutDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "logout", null);
 exports.AuthController = AuthController = __decorate([
-    (0, common_1.Controller)("auth"),
+    (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map
