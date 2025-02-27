@@ -16,16 +16,19 @@ import { AuthGuard } from '@nestjs/passport';
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
+
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
   signup(@Body() body: SignUpDto): Promise<Tokens> {
     return this.authService.signup(body);
   }
+
   @Post('signin')
   @HttpCode(HttpStatus.OK)
   signin(@Body() body: SignInDto): Promise<Tokens> {
     return this.authService.signin(body);
   }
+
   @UseGuards(AuthGuard('jwt'))
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -33,8 +36,17 @@ export class AuthController {
     const userId: number = req.user.userId;
     return this.authService.logout({ userId: userId });
   }
-  // @Post('refresh')
-  // refresh(@Body() req): Promise<Tokens> {
-  //   return this.authService.refresh(req);
-  // }
+
+  @UseGuards(AuthGuard('jwt-refresh'))
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  refresh(@Req() req): Promise<Tokens> {
+    const refreshToken: string = req.user.refreshToken;
+    console.log(refreshToken);
+    const userId: number = req.user.userId;
+    return this.authService.refresh({
+      userId: userId,
+      refreshToken: refreshToken,
+    });
+  }
 }

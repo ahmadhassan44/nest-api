@@ -91,7 +91,32 @@ export class AuthService {
       },
     });
   }
-  // async refresh(@Body() req): Promise<Tokens> {}
+  async refresh({
+    userId,
+    refreshToken,
+  }: {
+    userId: number;
+    refreshToken: string;
+  }): Promise<Tokens> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        hashedRt: {
+          not: null,
+        },
+      },
+    });
+    if (!user) throw new ForbiddenException('Invalid refresh token');
+    const match = await argon.verify(user.hashedRt, refreshToken);
+    if (!match) throw new ForbiddenException('Invalid refresh token');
+    const tokens: Tokens = await this.generateTokens(
+      user.email,
+      user.roleId,
+      user.id,
+    );
+    await this.updateRefreshTokenInDb(user.id, tokens.refreshToken);
+    return tokens;
+  }
 
   async generateTokens(email: string, roleId: number, userId: number) {
     const [at, rt]: Array<string> = await Promise.all([
