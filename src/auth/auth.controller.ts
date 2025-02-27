@@ -42,7 +42,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   refresh(@Req() req): Promise<Tokens> {
     const refreshToken: string = req.user.refreshToken;
-    console.log(refreshToken);
     const userId: number = req.user.userId;
     return this.authService.refresh({
       userId: userId,
