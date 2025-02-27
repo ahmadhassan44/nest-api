@@ -27,7 +27,11 @@ export class AuthService {
     const match = await argon.verify(user.hash, dto.password);
     if (!match) throw new ForbiddenException('Invalid password');
     else {
-      const tokens: Tokens = await this.generateTokens(user.email, user.id);
+      const tokens: Tokens = await this.generateTokens(
+        user.email,
+        user.roleId,
+        user.id,
+      );
       await this.updateRefreshTokenInDb(user.id, tokens.refreshToken);
       return tokens;
     }
@@ -46,6 +50,7 @@ export class AuthService {
           firstName: dto.firstName,
           lastName: dto.lastName,
           hash,
+          roleId: dto.roleId,
         },
         select: {
           id: true,
@@ -54,9 +59,14 @@ export class AuthService {
           lastName: true,
           username: true,
           createdAt: true,
+          roleId: true,
         },
       });
-      const tokens: Tokens = await this.generateTokens(user.email, user.id);
+      const tokens: Tokens = await this.generateTokens(
+        user.email,
+        user.roleId,
+        user.id,
+      );
       await this.updateRefreshTokenInDb(user.id, tokens.refreshToken);
       return tokens;
     } catch (error) {
@@ -83,12 +93,13 @@ export class AuthService {
   }
   // async refresh(@Body() req): Promise<Tokens> {}
 
-  async generateTokens(email: string, roleId: number) {
+  async generateTokens(email: string, roleId: number, userId: number) {
     const [at, rt]: Array<string> = await Promise.all([
       this.jwtService.sign(
         {
           sub: email,
           roleId,
+          userId: userId,
         },
         { expiresIn: '15m', secret: process.env.JWT_AT_SECRET },
       ),
@@ -96,6 +107,7 @@ export class AuthService {
         {
           sub: email,
           roleId,
+          userId: userId,
         },
         { expiresIn: '7d', secret: process.env.JWT_RT_SECRET },
       ),

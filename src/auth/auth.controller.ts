@@ -5,11 +5,13 @@ import {
   HttpStatus,
   Post,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInDto, SignUpDto } from './dto';
 import { Tokens } from './types';
 import { SignOutDto } from './dto/signout.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -24,10 +26,12 @@ export class AuthController {
   signin(@Body() body: SignInDto): Promise<Tokens> {
     return this.authService.signin(body);
   }
+  @UseGuards(AuthGuard('jwt'))
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  logout(@Body() body: SignOutDto): Promise<void> {
-    return this.authService.logout(body);
+  logout(@Req() req): Promise<void> {
+    const userId: number = req.user.userId;
+    return this.authService.logout({ userId: userId });
   }
   // @Post('refresh')
   // refresh(@Body() req): Promise<Tokens> {

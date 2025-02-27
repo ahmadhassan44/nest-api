@@ -17,6 +17,7 @@ model User {
   firstName String
   lastName  String?
   hashedRt  String?
+  roleId    Int
 
   @@map("users")
 }
