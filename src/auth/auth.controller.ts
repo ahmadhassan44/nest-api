@@ -10,7 +10,6 @@ import {
 import { AuthService } from './auth.service';
 import { SignInDto, SignUpDto } from './dto';
 import { Tokens } from './types';
-import { AuthGuard } from '@nestjs/passport';
 import { AtGuard, RtGuard } from './guards';
 
 @Controller('auth')
@@ -22,7 +21,6 @@ export class AuthController {
   signup(@Body() body: SignUpDto): Promise<Tokens> {
     return this.authService.signup(body);
   }
-
   @Post('signin')
   @HttpCode(HttpStatus.OK)
   signin(@Body() body: SignInDto): Promise<Tokens> {
