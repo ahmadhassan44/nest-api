@@ -16,7 +16,8 @@ model User {
   hash      String
   firstName String
   lastName  String?
+  hashedRt  String?
+  roleId    Int
 
   @@map("users")
 }
-
