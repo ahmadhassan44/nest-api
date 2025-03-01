@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInDto, SignUpDto } from './dto';
-import { Tokens } from './types';
+import { AuthResponse } from './types';
 import { AtGuard, RtGuard } from './guards';
 
 @Controller('auth')
@@ -18,12 +18,13 @@ export class AuthController {
 
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
-  signup(@Body() body: SignUpDto): Promise<Tokens> {
+  signup(@Body() body: SignUpDto): Promise<AuthResponse> {
     return this.authService.signup(body);
   }
+
   @Post('signin')
   @HttpCode(HttpStatus.OK)
-  signin(@Body() body: SignInDto): Promise<Tokens> {
+  signin(@Body() body: SignInDto): Promise<AuthResponse> {
     return this.authService.signin(body);
   }
 
@@ -38,7 +39,7 @@ export class AuthController {
   @UseGuards(RtGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  refresh(@Req() req): Promise<Tokens> {
+  refresh(@Req() req): Promise<AuthResponse> {
     const refreshToken: string = req.user.refreshToken;
     const userId: number = req.user.userId;
     return this.authService.refresh({

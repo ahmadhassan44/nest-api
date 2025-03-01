@@ -4,7 +4,7 @@ import * as argon from 'argon2';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { JwtService } from '@nestjs/jwt';
-import { Tokens } from './types';
+import { AuthResponse, Tokens } from './types';
 
 @Injectable()
 export class AuthService {
@@ -12,31 +12,47 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
-  async signin(@Body() dto: SignInDto): Promise<Tokens> {
-    //find the user by email or username provided in dto
+
+  async signin(@Body() dto: SignInDto): Promise<AuthResponse> {
+    // Find the user by email or username provided in dto
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [{ email: dto.usernameOrEmail }, { username: dto.usernameOrEmail }],
       },
     });
-    //if user is not found, throw an error
+
+    // If user is not found, throw an error
     if (!user) throw new ForbiddenException('User does not exist');
 
-    //compare the password provided in dto with the hash stored in the database
+    // Compare the password provided in dto with the hash stored in the database
     const match = await argon.verify(user.hash, dto.password);
     if (!match) throw new ForbiddenException('Invalid password');
-    else {
-      const tokens: Tokens = await this.generateTokens(
-        user.email,
-        user.roleId,
-        user.id,
-      );
-      await this.updateRefreshTokenInDb(user.id, tokens.refreshToken);
-      return tokens;
-    }
+
+    // Generate tokens
+    const tokens = await this.generateTokens(user.email, user.roleId, user.id);
+    await this.updateRefreshTokenInDb(user.id, tokens.refreshToken);
+
+    // Return comprehensive response
+    return {
+      tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roleId: user.roleId,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      },
+      meta: {
+        issued: new Date().toISOString(),
+        serverTime: new Date().toISOString()
+      }
+    };
   }
 
-  async signup(@Body() dto: SignUpDto): Promise<Tokens> {
+  async signup(@Body() dto: SignUpDto): Promise<AuthResponse> {
     //generate hash for password
     const hash: string = await argon.hash(dto.password);
 
@@ -58,16 +74,25 @@ export class AuthService {
           lastName: true,
           username: true,
           createdAt: true,
+          updatedAt: true,
           roleId: true,
         },
       });
-      const tokens: Tokens = await this.generateTokens(
+      const tokens = await this.generateTokens(
         user.email,
         user.roleId,
         user.id,
       );
       await this.updateRefreshTokenInDb(user.id, tokens.refreshToken);
-      return tokens;
+      
+      return {
+        tokens,
+        user,
+        meta: {
+          issued: new Date().toISOString(),
+          serverTime: new Date().toISOString()
+        }
+      };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -77,6 +102,7 @@ export class AuthService {
       throw error;
     }
   }
+
   async logout({ userId }: { userId: number }): Promise<void> {
     await this.prisma.user.updateMany({
       where: {
@@ -90,13 +116,14 @@ export class AuthService {
       },
     });
   }
+
   async refresh({
     userId,
     refreshToken,
   }: {
     userId: number;
     refreshToken: string;
-  }): Promise<Tokens> {
+  }): Promise<AuthResponse> {
     const user = await this.prisma.user.findFirst({
       where: {
         id: userId,
@@ -108,16 +135,34 @@ export class AuthService {
     if (!user) throw new ForbiddenException('Invalid refresh token');
     const match = await argon.verify(user.hashedRt, refreshToken);
     if (!match) throw new ForbiddenException('Invalid refresh token');
-    const tokens: Tokens = await this.generateTokens(
+    
+    const tokens = await this.generateTokens(
       user.email,
       user.roleId,
       user.id,
     );
     await this.updateRefreshTokenInDb(user.id, tokens.refreshToken);
-    return tokens;
+    
+    return {
+      tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roleId: user.roleId,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      },
+      meta: {
+        issued: new Date().toISOString(),
+        serverTime: new Date().toISOString()
+      }
+    };
   }
 
-  async generateTokens(email: string, roleId: number, userId: number) {
+  async generateTokens(email: string, roleId: number, userId: number): Promise<Tokens> {
     const [at, rt]: Array<string> = await Promise.all([
       this.jwtService.sign(
         {
@@ -136,7 +181,10 @@ export class AuthService {
         { expiresIn: '7d', secret: process.env.JWT_RT_SECRET },
       ),
     ]);
-    return { accessToken: at, refreshToken: rt };
+    return {
+      accessToken: at,
+      refreshToken: rt
+    };
   }
 
   async updateRefreshTokenInDb(userId: number, refreshToken: string) {
